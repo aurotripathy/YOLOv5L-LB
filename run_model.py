@@ -1,6 +1,7 @@
 
 """
-Benchmark excludes image read write time
+Benchmark excludes image read  & write time
+from jongwook
 """
 import yaml
 import os, subprocess
@@ -24,7 +25,7 @@ def get_params_from_cfg(cfg):
 @app.command()
 def main(cfg, input_path):
     model_info, runner_info = get_params_from_cfg(cfg)
-    print(f'model info: {model_info}, runner info:{runner_info}')
+    print(f'model info: {model_info} \nrunner info:{runner_info}')
     
     model_name = model_info["model_name"]
     # model_path = "borde_model.enf"
@@ -37,12 +38,12 @@ def main(cfg, input_path):
     os.makedirs(result_path)
 
     pre_processor = YOLOPreProcessor()
-    post_processor = ObjDetPostProcess("yolov5m", runner_info)
+    post_processor = ObjDetPostProcess("yolov5l", runner_info)
 
     input_images = os.listdir(str(input_path))
     t1, t2, t3 = 0.0, 0.0, 0.0
 
-    with create_runner(model_path) as runner:
+    with create_runner(model_path, device='npu:0:0-1', worker_num=8) as runner:
         for input_img in input_images:
             img_name = input_img.split('.')[0]
             
@@ -65,9 +66,9 @@ def main(cfg, input_path):
     
     print(f'Processed {len(input_images)} image')
     
-    print(f"Avg Preprocessing: {1000 * t1/len(input_images):.2f}, Avg Inference: {1000 * t2/len(input_images):.2f}, Avg Postprocessing: {1000 * t3/len(input_images):.2f}")
+    print(f"Pre-processing(avg. ms): {1000 * t1/len(input_images):.2f}, NPU processing (avg. ms): {1000 * t2/len(input_images):.2f}, Post-processing (avg. ms): {1000 * t3/len(input_images):.2f}")
     
-    print(f"FPS: {len(input_images)/(t1 + t2 + t3):.2f}")
+    print(f"FPS, (image read or write time not included): {len(input_images)/(t1 + t2 + t3):.2f}")
 
 if __name__ == "__main__":
     app()
